@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>给佳欣的专属惊喜</title>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+    <style>
+        @keyframes float-away { 0% { transform: translate(-50%, -50%) scale(0.5); opacity: 1; } 100% { transform: translate(-50%, -150%) scale(1.5) rotate(45deg); opacity: 0; } }
+        @keyframes bg-glow { 0%, 100% { background: radial-gradient(circle at 50% 50%, #2d1b2e 0%, #0f0f12 100%); } 50% { background: radial-gradient(circle at 50% 50%, #4a1d2e 0%, #0f0f12 100%); } }
+        .animate-bg { animation: bg-glow 4s infinite; }
+        body { margin: 0; background-color: #0f0f12; color: white; overflow: hidden; font-family: -apple-system, sans-serif; -webkit-tap-highlight-color: transparent; }
+        .glass { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); border: 1px solid rgba(255, 255, 255, 0.1); }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+        const App = () => {
+            const [stage, setStage] = useState('auth');
+            const [input, setInput] = useState('');
+            const [particles, setParticles] = useState([]);
+            const [openedGifts, setOpenedGifts] = useState([]);
+            const [charge, setCharge] = useState(0);
+            const chargeTimer = useRef(null);
+
+            const handleTouch = (e) => {
+                if (stage !== 'interaction') return;
+                const touch = e.touches ? e.touches[0] : e;
+                const id = Date.now() + Math.random();
+                setParticles(prev => [...prev, { id, x: touch.clientX, y: touch.clientY, type: Math.random() > 0.5 ? '🌸' : '🧋' }]);
+                setTimeout(() => setParticles(prev => prev.filter(p => p.id !== id)), 1000);
+                if (particles.length > 20) setTimeout(() => setStage('gifts'), 300);
+            };
+
+            const startCharging = (e) => {
+                e.preventDefault();
+                chargeTimer.current = setInterval(() => {
+                    setCharge(prev => {
+                        if (prev >= 100) { clearInterval(chargeTimer.current); setTimeout(() => setStage('final'), 500); return 100; }
+                        return prev + 2;
+                    });
+                }, 30);
+            };
+
+            const stopCharging = () => { clearInterval(chargeTimer.current); if (charge < 100) setCharge(0); };
+
+            return (
+                <div className="h-screen w-full relative overflow-hidden flex flex-col items-center" onTouchStart={handleTouch} onMouseDown={handleTouch}>
+                    <div className="absolute inset-0 animate-bg opacity-70" />
+                    {particles.map(p => (
+                        <div key={p.id} className="fixed pointer-events-none z-50 text-3xl" style={{ left: p.x, top: p.y, animation: 'float-away 1s forwards ease-out' }}>{p.type}</div>
+                    ))}
+
+                    {stage === 'auth' && (
+                        <div className="h-full w-full flex flex-col p-10 justify-center z-10">
+                            <h1 className="text-2xl font-bold text-center mb-10 tracking-widest">佳欣专属验证</h1>
+                            <input type="tel" maxLength="4" className="bg-white/5 w-full text-center py-5 rounded-2xl text-3xl font-mono tracking-widest outline-none border border-pink-500/30" 
+                                   placeholder="输入生日解锁" value={input} onChange={(e) => { setInput(e.target.value); if (e.target.value === '1105') setStage('interaction'); }} />
+                        </div>
+                    )}
+
+                    {stage === 'interaction' && (
+                        <div className="h-full flex flex-col items-center justify-center p-10 text-center z-10 animate__animated animate__zoomIn">
+                            <div className="text-7xl mb-10 animate-bounce">👆</div>
+                            <h2 className="text-2xl font-bold mb-6">疯狂点击屏幕！</h2>
+                            <p className="text-white/60">填满你的茉莉花海吧</p>
+                        </div>
+                    )}
+
+                    {stage === 'gifts' && (
+                        <div className="h-full flex flex-col items-center justify-center p-6 z-10 w-full">
+                            <h2 className="text-xl mb-10 text-pink-200 tracking-widest">点击解锁惊喜</h2>
+                            <div className="space-y-4 w-full max-w-sm">
+                                {[
+                                    { id: 1, t: '关于奶芙', c: '热烈且惊喜。', i: '🧋' },
+                                    { id: 2, t: '关于茉莉', c: '你给我的心安。', i: '🌸' },
+                                    { id: 3, t: '关于未来', c: '我爱你，佳欣！', i: '❤️' }
+                                ].map(g => (
+                                    <div key={g.id} onClick={() => !openedGifts.includes(g.id) && setOpenedGifts([...openedGifts, g.id])} 
+                                         className={`p-6 rounded-3xl glass ${openedGifts.includes(g.id) ? 'bg-pink-500/10' : ''}`}>
+                                        <div className="flex items-center gap-4">
+                                            <span>{openedGifts.includes(g.id) ? g.i : '🎁'}</span>
+                                            <div><div className="font-bold text-lg">{g.t}</div>{openedGifts.includes(g.id) && <div className="text-sm opacity-60">{g.c}</div>}</div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                            {openedGifts.length === 3 && <button onClick={() => setStage('charge')} className="mt-10 px-8 py-3 bg-pink-500 rounded-full font-bold">注入爱意 →</button>}
+                        </div>
+                    )}
+
+                    {stage === 'charge' && (
+                        <div className="h-full flex flex-col items-center justify-center p-10 z-10">
+                            <div className="relative w-48 h-48 flex items-center justify-center">
+                                <svg className="w-full h-full transform -rotate-90 absolute">
+                                    <circle cx="96" cy="96" r="80" stroke="rgba(255,255,255,0.1)" strokeWidth="8" fill="transparent" />
+                                    <circle cx="96" cy="96" r="80" stroke="#f43f5e" strokeWidth="8" fill="transparent" strokeDasharray="502" strokeDashoffset={502 - (502 * charge) / 100} />
+                                </svg>
+                                <div onPointerDown={startCharging} onPointerUp={stopCharging} onPointerLeave={stopCharging} className="w-32 h-32 bg-rose-600 rounded-full flex flex-col items-center justify-center shadow-lg active:scale-90 select-none">
+                                    <span className="text-xs font-bold text-white">长按注入能量</span>
+                                </div>
+                            </div>
+                            <div className="mt-12 text-rose-500 text-3xl font-bold">{Math.floor(charge)}%</div>
+                        </div>
+                    )}
+
+                    {stage === 'final' && (
+                        <div className="h-full flex flex-col items-center justify-center p-8 text-center bg-gradient-to-b from-rose-950 to-black z-20 w-full animate__animated animate__zoomIn">
+                            <h1 className="text-4xl font-black mb-10 italic">邓佳欣 ❤️</h1>
+                            <div className="glass p-8 rounded-[2rem] w-full max-w-sm">
+                                <p className="text-xl font-bold text-rose-200 mb-6 italic">“你是我生命里唯一的脆脆奶芙”</p>
+                                <p className="text-sm text-white/70 leading-relaxed">遇见你之后，古茗变得更甜了，茉莉变得更香了。11月5日是我每年最期待的日子。我爱你！</p>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
